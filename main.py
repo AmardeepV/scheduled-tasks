@@ -1,38 +1,49 @@
-# To run and test the code you need to update 4 places:
-# 1. Change MY_EMAIL/MY_PASSWORD to your own details.
-# 2. Go to your email provider and make it allow less secure apps.
-# 3. Update the SMTP ADDRESS to match your email provider.
-# 4. Update birthdays.csv to contain today's month and day.
-# See the solution video in the 100 Days of Python Course for explainations.
-
-
-from datetime import datetime
-import pandas
-import random
 import smtplib
+import datetime as dt
+import random
+import pandas as pd
 import os
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+password = os.environ.get("GMAIL_PYTHON_PASSWORD")
+send_user_email = "amardeepverma03@gmail.com"
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+LETTER_FILES = ["letter_templates/letter_1.txt",
+                "letter_templates/letter_2.txt", "letter_templates/letter_3.txt"]
+BIRTHDAY_FILE = "birthdays.csv"
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
+user_data = pd.read_csv(BIRTHDAY_FILE)
+now = dt.datetime.now()
+previous_day = None
 
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+current_day = now.day
+current_month = now.month
+message = random.choice(LETTER_FILES)
+if current_day in user_data['day'].values and current_month in user_data['month'].values:
+    if current_day != previous_day:
+        names = user_data[user_data['day'] == current_day]['name']
+        emails = user_data[user_data['day'] == current_day]['email']
+
+        try:
+            with open(message, 'r') as file:
+                data = file.read()
+        except FileNotFoundError:
+            print("Letter template files does not exist")
+
+        for pos, name in enumerate(names.values):
+            email_content = data.replace("[NAME]", name)
+            try:
+                # setting up smtp gmail server
+                with smtplib.SMTP("smtp.gmail.com") as connection:
+                    connection.starttls()  # start secure stmp email connection
+                    # login details of the sender
+                    connection.login(user=send_user_email,
+                                     password=password)
+                    connection.sendmail(from_addr=send_user_email,
+                                        to_addrs=emails.values[pos],
+                                        msg=f"Subject:Happy Birthday!\n\n{email_content}")
+            except:
+                print("Check Username and Password")
+            else:
+                print(
+                    f"Email sent to {name} whose email is: {emails.values[pos]}")
+        previous_day = current_day
