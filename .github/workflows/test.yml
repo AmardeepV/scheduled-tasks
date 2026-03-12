@@ -23,9 +23,8 @@ jobs:
 
       - name: Check secrets are configured
         env:
-          MY_PASSWORD: ${{ secrets.GMAIL_PYTHON_PASSWORD }}
+          GMAIL_PYTHON_PASSWORD: ${{ secrets.GMAIL_PYTHON_PASSWORD }}
         run: |
-
           if [ -z "$GMAIL_PYTHON_PASSWORD" ]; then
             echo "GMAIL_PYTHON_PASSWORD secret is not set!"
             echo "Go to Settings > Secrets > Actions and add it."
